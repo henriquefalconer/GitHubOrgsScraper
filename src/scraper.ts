@@ -32,11 +32,28 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
 
   const locationAndType = `location:brazil type:org`;
 
-  const { total_count } = await requestWrapper(() =>
-    octokit.request('GET /search/users', { q: locationAndType })
+  const {
+    items: [oldestOrg],
+    total_count,
+  } = await requestWrapper(() =>
+    octokit.request('GET /search/users', {
+      q: locationAndType,
+      sort: 'joined',
+      order: 'asc',
+    })
   );
 
-  while (true) {
+  const oldestData = await requestWrapper(() =>
+    octokit.request('GET /users/{username}', {
+      username: oldestOrg.login,
+    })
+  );
+
+  const publicUser = oldestData as PublicUser;
+
+  const oldestOrgDate = publicUser.created_at;
+
+  while (moment(date, 'YYYY-MM-DD').isAfter(oldestOrgDate)) {
     const dateCreated = `created:${getPreviousWeek(date)}..${date}`;
 
     const orgs = await requestWrapper(() =>
@@ -93,8 +110,7 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
           );
           last_90_days_events_count = events.length;
         } catch (err) {
-          if (!(err instanceof RepoBlocked))
-            throw err;
+          if (!(err instanceof RepoBlocked)) throw err;
           last_90_days_events_count = 0;
         }
 
