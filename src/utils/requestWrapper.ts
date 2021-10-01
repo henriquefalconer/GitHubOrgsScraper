@@ -39,6 +39,8 @@ const requestWrapper = async <D>(
 
     await wait(resetMoment.diff(moment()));
 
+    console.log(`\n[${getFormattedTime()}] Operação retomada.`);
+
     return requestWrapper(request, retries);
   }
 };
