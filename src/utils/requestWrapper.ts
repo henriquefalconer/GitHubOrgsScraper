@@ -18,7 +18,7 @@ const requestWrapper = async <D>(
 
     return data;
   } catch (err: any) {
-    if (err.response.data.message === 'Repository access blocked')
+    if (err.response?.data?.message === 'Repository access blocked')
       throw new RepoBlocked(err.response.data.block.reason);
 
     if (err.response?.headers['x-ratelimit-remaining'] !== '0') {
