@@ -1,4 +1,5 @@
 import { Octokit } from '@octokit/core';
+import moment from 'moment';
 
 import {
   Organization,
@@ -7,30 +8,57 @@ import {
   ScrapingResult,
 } from 'interfaces';
 
+import { getPreviousWeek } from 'utils/time';
 import { readJSONFile, saveJSONFile } from 'utils/json';
 import requestWrapper from 'utils/requestWrapper';
 
 const scraper = async (octokit: Octokit, resultLocation: string) => {
   let nextPageToScrape: number;
+  let date: string;
   let organizations: Organization[];
 
   try {
     const result = readJSONFile<ScrapingResult>(resultLocation);
     nextPageToScrape = result.nextPageToScrape;
+    date = result.searchingDate;
     organizations = result.organizations;
   } catch {
     nextPageToScrape = 1;
+    date = moment().format('YYYY-MM-DD');
     organizations = [];
   }
 
+  const locationAndType = `location:brazil type:org`;
+
+  const { total_count } = await requestWrapper(() =>
+    octokit.request('GET /search/users', { q: locationAndType })
+  );
+
   while (true) {
+    const dateCreated = `created:${getPreviousWeek(date)}..${date}`;
+
     const orgs = await requestWrapper(() =>
       octokit.request('GET /search/users', {
-        q: 'location:brazil type:org',
+        q: `${dateCreated} ${locationAndType}`,
         page: nextPageToScrape,
         per_page: 100,
       })
     );
+
+    if (!orgs.items.length) {
+      date = getPreviousWeek(date);
+      nextPageToScrape = 1;
+
+      const result = {
+        nextPageToScrape,
+        searchingDate: date,
+        organizations,
+      };
+
+      saveJSONFile<ScrapingResult>(resultLocation, result);
+
+      continue;
+    }
 
     for (const organization of orgs.items) {
       if (organizations.some((o) => o.login === organization.login)) continue;
@@ -130,17 +158,25 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
 
       organizations = [...organizations, org];
 
-      const result = { nextPageToScrape, organizations };
+      const result = {
+        nextPageToScrape,
+        searchingDate: date,
+        organizations,
+      };
 
       saveJSONFile<ScrapingResult>(resultLocation, result);
 
       console.log(
-        `\n(${organizations.length}/${orgs.total_count}) ${org.name}:\n${totalRepoLast90DaysEvents} eventos recentes\t${totalRepoStars} estrelas em seus repositórios`
+        `\n(${organizations.length}/${total_count}) ${org.name}:\n${totalRepoLast90DaysEvents} eventos recentes\t${totalRepoStars} estrelas em seus repositórios`
       );
     }
 
     nextPageToScrape++;
-    const result = { nextPageToScrape, organizations };
+    const result = {
+      nextPageToScrape,
+      searchingDate: date,
+      organizations,
+    };
 
     saveJSONFile<ScrapingResult>(resultLocation, result);
   }
