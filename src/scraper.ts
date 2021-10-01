@@ -133,24 +133,26 @@ export default class Scraper implements IScraper {
 
         const repos: RepoWithEvents[] = [];
 
-        for (const repo of rawRepos) {
-          let last_90_days_events_count: number;
+        await Promise.all(
+          rawRepos.map(async (repo) => {
+            let last_90_days_events_count: number;
 
-          try {
-            const events = await requestWrapper(() =>
-              this.octokit.request('GET /repos/{owner}/{repo}/events', {
-                owner: organization.login,
-                repo: repo.name,
-              })
-            );
-            last_90_days_events_count = events.length;
-          } catch (err) {
-            if (!(err instanceof RepoBlocked)) throw err;
-            last_90_days_events_count = 0;
-          }
+            try {
+              const events = await requestWrapper(() =>
+                this.octokit.request('GET /repos/{owner}/{repo}/events', {
+                  owner: organization.login,
+                  repo: repo.name,
+                })
+              );
+              last_90_days_events_count = events.length;
+            } catch (err) {
+              if (!(err instanceof RepoBlocked)) throw err;
+              last_90_days_events_count = 0;
+            }
 
-          repos.push({ ...repo, last_90_days_events_count });
-        }
+            repos.push({ ...repo, last_90_days_events_count });
+          })
+        );
 
         const totalRepoStars = repos.reduce(
           (acc, r) => acc + (r.stargazers_count ?? 0),
