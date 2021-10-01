@@ -11,19 +11,19 @@ const requestWrapper = async <D>(
   try {
     const { data, headers } = await request();
 
-    // console.log(headers);
-
     if (headers['x-ratelimit-remaining'] === '0')
       throw new RateLimitError(headers['x-ratelimit-reset']);
 
     return data;
-  } catch (err) {
-    if (!(err instanceof RateLimitError)) throw err;
+  } catch (err: any) {
+    if (err.response.headers['x-ratelimit-remaining'] !== '0') throw err;
 
-    const resetMoment = moment.unix(Number(err.rateLimitReset) + 1);
+    const resetMoment = moment.unix(
+      Number(err.response.headers['x-ratelimit-reset']) + 1
+    );
 
     console.log(
-      `Chegou ao limite de requisições. Retomando operação às ${resetMoment.format(
+      `\nChegou ao limite de requisições. Retomando operação às ${resetMoment.format(
         'HH:mm:ss'
       )}`
     );
