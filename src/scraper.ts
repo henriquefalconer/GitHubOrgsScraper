@@ -30,14 +30,14 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
     organizations = [];
   }
 
-  const locationAndType = `location:brazil type:org`;
+  const baseQuery = `location:brazil type:org repos:>0`;
 
   const {
     items: [oldestOrg],
     total_count,
   } = await requestWrapper(() =>
     octokit.request('GET /search/users', {
-      q: locationAndType,
+      q: baseQuery,
       sort: 'joined',
       order: 'asc',
     })
@@ -58,7 +58,7 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
 
     const orgs = await requestWrapper(() =>
       octokit.request('GET /search/users', {
-        q: `${dateCreated} ${locationAndType}`,
+        q: `${baseQuery} ${dateCreated}`,
         page: nextPageToScrape,
         per_page: 100,
       })
@@ -82,19 +82,20 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
     for (const organization of orgs.items) {
       if (organizations.some((o) => o.login === organization.login)) continue;
 
-      const data = await requestWrapper(() =>
-        octokit.request('GET /users/{username}', {
-          username: organization.login,
-        })
-      );
-
-      const publicUser = data as PublicUser;
-
       const rawRepos = await requestWrapper(() =>
         octokit.request('GET /users/{username}/repos', {
           username: organization.login,
         })
       );
+
+      if (!rawRepos.length) continue;
+
+      const data = await requestWrapper(() =>
+        octokit.request('GET /users/{username}', {
+          username: organization.login,
+        })
+      );
+      const publicUser = data as PublicUser;
 
       const repos: RepoWithEvents[] = [];
 
