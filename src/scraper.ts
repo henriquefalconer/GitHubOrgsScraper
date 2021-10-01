@@ -211,6 +211,8 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
 
     saveJSONFile<ScrapingResult>(resultLocation, result);
   }
+
+  console.log('\nProcesso finalizado.\n');
 };
 
 export default scraper;
