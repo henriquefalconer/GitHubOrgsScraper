@@ -34,7 +34,6 @@ export default class Scraper implements IScraper {
   private organizations: Organization[];
   private totalCount: number;
   private oldestOrgDate: string;
-  private ready: Promise<boolean>;
 
   private readFile() {
     try {
@@ -59,31 +58,27 @@ export default class Scraper implements IScraper {
     saveJSONFile<ScrapingResult>(this.resultLocation, result);
   }
 
-  private readyPromise() {
-    this.ready = new Promise(async (res) => {
-      const {
-        items: [oldestOrg],
-        total_count,
-      } = await requestWrapper(() =>
-        this.octokit.request('GET /search/users', {
-          q: this.baseQuery,
-          sort: 'joined',
-          order: 'asc',
-        })
-      );
+  private async getMetadata() {
+    const {
+      items: [oldestOrg],
+      total_count,
+    } = await requestWrapper(() =>
+      this.octokit.request('GET /search/users', {
+        q: this.baseQuery,
+        sort: 'joined',
+        order: 'asc',
+      })
+    );
 
-      const oldestData = await requestWrapper(() =>
-        this.octokit.request('GET /users/{username}', {
-          username: oldestOrg.login,
-        })
-      );
-      const publicUser = oldestData as PublicUser;
+    const oldestData = await requestWrapper(() =>
+      this.octokit.request('GET /users/{username}', {
+        username: oldestOrg.login,
+      })
+    );
+    const publicUser = oldestData as PublicUser;
 
-      this.totalCount = total_count;
-      this.oldestOrgDate = publicUser.created_at;
-
-      return res(true);
-    });
+    this.totalCount = total_count;
+    this.oldestOrgDate = publicUser.created_at;
   }
 
   public setup({ octokit, baseQuery, resultLocation }: ScraperConfig) {
@@ -92,12 +87,10 @@ export default class Scraper implements IScraper {
     this.resultLocation = resultLocation;
 
     this.readFile();
-
-    this.readyPromise();
   }
 
   public async run() {
-    await this.ready;
+    await this.getMetadata();
 
     while (moment(this.date, 'YYYY-MM-DD').isAfter(this.oldestOrgDate)) {
       const dateCreated = `created:${getPreviousWeek(this.date)}..${this.date}`;
