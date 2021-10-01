@@ -67,16 +67,69 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
         0
       );
 
-      const totalRepoLast90DaysEventsCount = repos.reduce(
+      const totalRepoWatchers = repos.reduce(
+        (acc, r) => acc + (r.watchers_count ?? 0),
+        0
+      );
+
+      const totalRepoForks = repos.reduce(
+        (acc, r) => acc + (r.forks_count ?? 0),
+        0
+      );
+
+      const totalRepoOpenIssues = repos.reduce(
+        (acc, r) => acc + (r.open_issues_count ?? 0),
+        0
+      );
+
+      const totalRepoLast90DaysEvents = repos.reduce(
         (acc, r) => acc + r.last_90_days_events_count,
         0
       );
 
+      const {
+        login,
+        id,
+        avatar_url,
+        html_url,
+        name,
+        company,
+        blog,
+        location,
+        email,
+        hireable,
+        bio,
+        twitter_username,
+        public_repos,
+        followers,
+        following,
+        created_at,
+        updated_at,
+      } = publicUser;
+
       const org: Organization = {
-        ...publicUser,
-        repos,
-        total_repo_stars: totalRepoStars,
-        total_repo_last_90_days_events_count: totalRepoLast90DaysEventsCount,
+        login,
+        id,
+        avatarUrl: avatar_url,
+        htmlUrl: html_url,
+        name,
+        company,
+        blog,
+        location,
+        email,
+        hireable,
+        bio,
+        twitterUsername: twitter_username ?? null,
+        publicRepos: public_repos,
+        followers,
+        following,
+        createdAt: created_at,
+        updatedAt: updated_at,
+        totalRepoStars,
+        totalRepoWatchers,
+        totalRepoForks,
+        totalRepoOpenIssues,
+        totalRepoLast90DaysEvents,
       };
 
       organizations = [...organizations, org];
@@ -86,7 +139,7 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
       saveJSONFile<ScrapingResult>(resultLocation, result);
 
       console.log(
-        `\n${org.name}:\n${totalRepoLast90DaysEventsCount} eventos recentes\t${totalRepoStars} estrelas em seus repositórios`
+        `\n${org.name}:\n${totalRepoLast90DaysEvents} eventos recentes\t${totalRepoStars} estrelas em seus repositórios`
       );
     }
 
