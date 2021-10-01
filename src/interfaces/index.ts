@@ -33,5 +33,6 @@ export interface Organization {
 
 export interface ScrapingResult {
   nextPageToScrape: number;
+  searchingDate: string;
   organizations: Organization[];
 }
