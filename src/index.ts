@@ -1,12 +1,16 @@
 import { Octokit } from '@octokit/core';
 import dotenv from 'dotenv';
 
-import scraper from 'scraper';
+import Scraper from 'Scraper';
 
 dotenv.config();
 
-const octokit = new Octokit({ auth: process.env.PERSONAL_ACCESS_TOKEN });
+const scraper = new Scraper();
 
-const resultLocation = 'src/result.json';
+scraper.setup({
+  octokit: new Octokit({ auth: process.env.PERSONAL_ACCESS_TOKEN }),
+  baseQuery: 'location:brazil type:org repos:>0',
+  resultLocation: 'src/result.json',
+});
 
-scraper(octokit, resultLocation);
+scraper.run();
