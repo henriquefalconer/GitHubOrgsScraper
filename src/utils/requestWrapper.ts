@@ -5,12 +5,21 @@ import RepoBlocked from 'errors/RepoBlocked';
 
 import { getFormattedTime, wait } from './time';
 
+let error = false;
+let rateLimitReset: string;
+
 const requestWrapper = async <D>(
   request: () => Promise<OctokitResponse<D>>,
   retries = 1
 ): Promise<D> => {
   try {
     const { data } = await request();
+
+    if (error) {
+      const resetMoment = moment.unix(Number(rateLimitReset) + 1);
+
+      await wait(resetMoment.diff(moment()));
+    }
 
     return data;
   } catch (err: any) {
@@ -23,17 +32,24 @@ const requestWrapper = async <D>(
       throw err;
     }
 
-    const resetMoment = moment.unix(
-      Number(err.response.headers['x-ratelimit-reset']) + 1
-    );
+    const newRateLimitReset = err.response.headers['x-ratelimit-reset'];
 
-    console.log(
-      `\n[${getFormattedTime()}] Chegou ao limite de requisições. Retomando operação às ${resetMoment.format(
-        'HH:mm:ss'
-      )}`
-    );
+    const resetMoment = moment.unix(Number(newRateLimitReset) + 1);
+
+    if (rateLimitReset !== newRateLimitReset) {
+      console.log(
+        `\n[${getFormattedTime()}] Chegou ao limite de requisições. Retomando operação às ${resetMoment.format(
+          'HH:mm:ss'
+        )}`
+      );
+
+      rateLimitReset = newRateLimitReset;
+      error = true;
+    }
 
     await wait(resetMoment.diff(moment()));
+
+    error = false;
 
     console.log(`\n[${getFormattedTime()}] Operação retomada.`);
 
