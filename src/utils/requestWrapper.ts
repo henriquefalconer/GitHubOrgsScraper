@@ -1,7 +1,6 @@
 import { OctokitResponse } from '@octokit/types';
 import moment from 'moment';
 
-import RateLimitError from 'errors/RateLimitError';
 import RepoBlocked from 'errors/RepoBlocked';
 
 import { getFormattedTime, wait } from './time';
@@ -11,10 +10,7 @@ const requestWrapper = async <D>(
   retries = 1
 ): Promise<D> => {
   try {
-    const { data, headers } = await request();
-
-    if (headers['x-ratelimit-remaining'] === '0')
-      throw new RateLimitError(headers['x-ratelimit-reset']);
+    const { data } = await request();
 
     return data;
   } catch (err: any) {
