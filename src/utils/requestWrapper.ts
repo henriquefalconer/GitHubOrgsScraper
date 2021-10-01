@@ -4,7 +4,7 @@ import moment from 'moment';
 import RateLimitError from 'errors/RateLimitError';
 import RepoBlocked from 'errors/RepoBlocked';
 
-import { wait } from './time';
+import { getFormattedTime, wait } from './time';
 
 const requestWrapper = async <D>(
   request: () => Promise<OctokitResponse<D>>,
@@ -32,7 +32,7 @@ const requestWrapper = async <D>(
     );
 
     console.log(
-      `\nChegou ao limite de requisições. Retomando operação às ${resetMoment.format(
+      `\n[${getFormattedTime()}] Chegou ao limite de requisições. Retomando operação às ${resetMoment.format(
         'HH:mm:ss'
       )}`
     );

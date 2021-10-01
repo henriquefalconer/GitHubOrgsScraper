@@ -10,7 +10,7 @@ import {
 
 import RepoBlocked from 'errors/RepoBlocked';
 
-import { getPreviousWeek } from 'utils/time';
+import { getFormattedTime, getPreviousWeek } from 'utils/time';
 import { readJSONFile, saveJSONFile } from 'utils/json';
 import requestWrapper from 'utils/requestWrapper';
 
@@ -194,9 +194,7 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
       saveJSONFile<ScrapingResult>(resultLocation, result);
 
       const count = organizations.length;
-      const stats = `[${count}/${total_count} - ${moment().format(
-        'HH:mm:ss.SS'
-      )}]`;
+      const stats = `[${count}/${total_count} - ${getFormattedTime()}]`;
       const info = `${org.name} (${org.login})`;
       const numbers = `${totalRepoLast90DaysEvents} eventos recentes\t${totalRepoStars} estrelas em seus repositórios`;
 
@@ -213,7 +211,7 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
     saveJSONFile<ScrapingResult>(resultLocation, result);
   }
 
-  console.log('\nProcesso finalizado.\n');
+  console.log(`\n[${getFormattedTime()}] Processo finalizado.\n`);
 };
 
 export default scraper;
