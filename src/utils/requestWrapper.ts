@@ -2,6 +2,7 @@ import { OctokitResponse } from '@octokit/types';
 import moment from 'moment';
 
 import RateLimitError from 'errors/RateLimitError';
+import RepoBlocked from 'errors/RepoBlocked';
 
 import { wait } from './time';
 
@@ -17,6 +18,9 @@ const requestWrapper = async <D>(
 
     return data;
   } catch (err: any) {
+    if (err.response.data.message === 'Repository access blocked')
+      throw new RepoBlocked(err.response.data.block.reason);
+
     if (err.response?.headers['x-ratelimit-remaining'] !== '0') {
       console.log(err);
       if (retries) return requestWrapper(request, --retries);
