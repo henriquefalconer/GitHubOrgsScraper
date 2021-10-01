@@ -66,22 +66,18 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
         (acc, r) => acc + (r.stargazers_count ?? 0),
         0
       );
-
       const totalRepoWatchers = repos.reduce(
         (acc, r) => acc + (r.watchers_count ?? 0),
         0
       );
-
       const totalRepoForks = repos.reduce(
         (acc, r) => acc + (r.forks_count ?? 0),
         0
       );
-
       const totalRepoOpenIssues = repos.reduce(
         (acc, r) => acc + (r.open_issues_count ?? 0),
         0
       );
-
       const totalRepoLast90DaysEvents = repos.reduce(
         (acc, r) => acc + r.last_90_days_events_count,
         0
