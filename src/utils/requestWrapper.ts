@@ -22,8 +22,8 @@ const requestWrapper = async <D>(
       throw new RepoBlocked(err.response.data.block.reason);
 
     if (err.response?.headers['x-ratelimit-remaining'] !== '0') {
-      console.log(err);
       if (retries) return requestWrapper(request, --retries);
+      console.log(err);
       throw err;
     }
 
