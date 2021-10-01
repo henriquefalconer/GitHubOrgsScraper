@@ -194,7 +194,11 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
       saveJSONFile<ScrapingResult>(resultLocation, result);
 
       console.log(
-        `\n(${organizations.length}/${total_count}) ${org.name}:\n${totalRepoLast90DaysEvents} eventos recentes\t${totalRepoStars} estrelas em seus repositórios`
+        `\n[${organizations.length}/${total_count} - ${moment().format(
+          'HH:mm:ss.SS'
+        )}] ${
+          org.name
+        }:\n${totalRepoLast90DaysEvents} eventos recentes\t${totalRepoStars} estrelas em seus repositórios`
       );
     }
 
