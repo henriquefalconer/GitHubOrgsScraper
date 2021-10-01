@@ -112,125 +112,127 @@ export default class Scraper implements IScraper {
         continue;
       }
 
-      for (const organization of orgs.items) {
-        if (this.organizations.some((o) => o.login === organization.login))
-          continue;
+      await Promise.all(
+        orgs.items.map(async (organization) => {
+          if (this.organizations.some((o) => o.login === organization.login))
+            return;
 
-        const rawRepos = await requestWrapper(() =>
-          this.octokit.request('GET /users/{username}/repos', {
-            username: organization.login,
-          })
-        );
+          const rawRepos = await requestWrapper(() =>
+            this.octokit.request('GET /users/{username}/repos', {
+              username: organization.login,
+            })
+          );
 
-        if (!rawRepos.length) continue;
+          if (!rawRepos.length) return;
 
-        const data = await requestWrapper(() =>
-          this.octokit.request('GET /users/{username}', {
-            username: organization.login,
-          })
-        );
-        const publicUser = data as PublicUser;
+          const data = await requestWrapper(() =>
+            this.octokit.request('GET /users/{username}', {
+              username: organization.login,
+            })
+          );
+          const publicUser = data as PublicUser;
 
-        const repos: RepoWithEvents[] = [];
+          const repos: RepoWithEvents[] = [];
 
-        await Promise.all(
-          rawRepos.map(async (repo) => {
-            let last_90_days_events_count: number;
+          await Promise.all(
+            rawRepos.map(async (repo) => {
+              let last_90_days_events_count: number;
 
-            try {
-              const events = await requestWrapper(() =>
-                this.octokit.request('GET /repos/{owner}/{repo}/events', {
-                  owner: organization.login,
-                  repo: repo.name,
-                })
-              );
-              last_90_days_events_count = events.length;
-            } catch (err) {
-              if (!(err instanceof RepoBlocked)) throw err;
-              last_90_days_events_count = 0;
-            }
+              try {
+                const events = await requestWrapper(() =>
+                  this.octokit.request('GET /repos/{owner}/{repo}/events', {
+                    owner: organization.login,
+                    repo: repo.name,
+                  })
+                );
+                last_90_days_events_count = events.length;
+              } catch (err) {
+                if (!(err instanceof RepoBlocked)) throw err;
+                last_90_days_events_count = 0;
+              }
 
-            repos.push({ ...repo, last_90_days_events_count });
-          })
-        );
+              repos.push({ ...repo, last_90_days_events_count });
+            })
+          );
 
-        const totalRepoStars = repos.reduce(
-          (acc, r) => acc + (r.stargazers_count ?? 0),
-          0
-        );
-        const totalRepoWatchers = repos.reduce(
-          (acc, r) => acc + (r.watchers_count ?? 0),
-          0
-        );
-        const totalRepoForks = repos.reduce(
-          (acc, r) => acc + (r.forks_count ?? 0),
-          0
-        );
-        const totalRepoOpenIssues = repos.reduce(
-          (acc, r) => acc + (r.open_issues_count ?? 0),
-          0
-        );
-        const totalRepoLast90DaysEvents = repos.reduce(
-          (acc, r) => acc + r.last_90_days_events_count,
-          0
-        );
+          const totalRepoStars = repos.reduce(
+            (acc, r) => acc + (r.stargazers_count ?? 0),
+            0
+          );
+          const totalRepoWatchers = repos.reduce(
+            (acc, r) => acc + (r.watchers_count ?? 0),
+            0
+          );
+          const totalRepoForks = repos.reduce(
+            (acc, r) => acc + (r.forks_count ?? 0),
+            0
+          );
+          const totalRepoOpenIssues = repos.reduce(
+            (acc, r) => acc + (r.open_issues_count ?? 0),
+            0
+          );
+          const totalRepoLast90DaysEvents = repos.reduce(
+            (acc, r) => acc + r.last_90_days_events_count,
+            0
+          );
 
-        const {
-          login,
-          id,
-          avatar_url,
-          html_url,
-          name,
-          company,
-          blog,
-          location,
-          email,
-          hireable,
-          bio,
-          twitter_username,
-          public_repos,
-          followers,
-          following,
-          created_at,
-          updated_at,
-        } = publicUser;
+          const {
+            login,
+            id,
+            avatar_url,
+            html_url,
+            name,
+            company,
+            blog,
+            location,
+            email,
+            hireable,
+            bio,
+            twitter_username,
+            public_repos,
+            followers,
+            following,
+            created_at,
+            updated_at,
+          } = publicUser;
 
-        const org: Organization = {
-          login,
-          id,
-          avatarUrl: avatar_url,
-          htmlUrl: html_url,
-          name,
-          company,
-          blog,
-          location,
-          email,
-          hireable,
-          bio,
-          twitterUsername: twitter_username ?? null,
-          publicRepos: public_repos,
-          followers,
-          following,
-          createdAt: created_at,
-          updatedAt: updated_at,
-          totalRepoStars,
-          totalRepoWatchers,
-          totalRepoForks,
-          totalRepoOpenIssues,
-          totalRepoLast90DaysEvents,
-        };
+          const org: Organization = {
+            login,
+            id,
+            avatarUrl: avatar_url,
+            htmlUrl: html_url,
+            name,
+            company,
+            blog,
+            location,
+            email,
+            hireable,
+            bio,
+            twitterUsername: twitter_username ?? null,
+            publicRepos: public_repos,
+            followers,
+            following,
+            createdAt: created_at,
+            updatedAt: updated_at,
+            totalRepoStars,
+            totalRepoWatchers,
+            totalRepoForks,
+            totalRepoOpenIssues,
+            totalRepoLast90DaysEvents,
+          };
 
-        this.organizations = [...this.organizations, org];
+          this.organizations = [...this.organizations, org];
 
-        this.saveToFile();
+          this.saveToFile();
 
-        const count = this.organizations.length;
-        const stats = `[${count}/${this.totalCount} - ${getFormattedTime()}]`;
-        const info = `${org.name} (${org.login})`;
-        const numbers = `${totalRepoLast90DaysEvents} eventos recentes\t${totalRepoStars} estrelas em seus repositórios`;
+          const count = this.organizations.length;
+          const stats = `[${count}/${this.totalCount} - ${getFormattedTime()}]`;
+          const info = `${org.name} (${org.login})`;
+          const numbers = `${totalRepoLast90DaysEvents} eventos recentes\t${totalRepoStars} estrelas em seus repositórios`;
 
-        console.log(`\n${stats} ${info}:\n${numbers}`);
-      }
+          console.log(`\n${stats} ${info}:\n${numbers}`);
+        })
+      );
 
       this.nextPageToScrape++;
 
