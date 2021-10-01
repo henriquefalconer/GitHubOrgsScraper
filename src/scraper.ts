@@ -8,6 +8,8 @@ import {
   ScrapingResult,
 } from 'interfaces';
 
+import RepoBlocked from 'errors/RepoBlocked';
+
 import { getPreviousWeek } from 'utils/time';
 import { readJSONFile, saveJSONFile } from 'utils/json';
 import requestWrapper from 'utils/requestWrapper';
@@ -80,14 +82,23 @@ const scraper = async (octokit: Octokit, resultLocation: string) => {
       const repos: RepoWithEvents[] = [];
 
       for (const repo of rawRepos) {
-        const events = await requestWrapper(() =>
-          octokit.request('GET /repos/{owner}/{repo}/events', {
-            owner: organization.login,
-            repo: repo.name,
-          })
-        );
+        let last_90_days_events_count: number;
 
-        repos.push({ ...repo, last_90_days_events_count: events.length });
+        try {
+          const events = await requestWrapper(() =>
+            octokit.request('GET /repos/{owner}/{repo}/events', {
+              owner: organization.login,
+              repo: repo.name,
+            })
+          );
+          last_90_days_events_count = events.length;
+        } catch (err) {
+          if (!(err instanceof RepoBlocked))
+            throw err;
+          last_90_days_events_count = 0;
+        }
+
+        repos.push({ ...repo, last_90_days_events_count });
       }
 
       const totalRepoStars = repos.reduce(
