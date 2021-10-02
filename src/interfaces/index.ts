@@ -8,27 +8,21 @@ export type RepoWithEvents = components['schemas']['minimal-repository'] & {
 
 export interface Organization {
   login: string;
-  id: number;
   avatarUrl: string;
   htmlUrl: string;
   name: string | null;
-  company: string | null;
   blog: string | null;
   location: string | null;
   email: string | null;
-  hireable: boolean | null;
   bio: string | null;
   twitterUsername: string | null;
+  createdAt: string;
   publicRepos: number;
-  followers: number;
-  following: number;
   totalRepoStars: number;
   totalRepoWatchers: number;
   totalRepoForks: number;
   totalRepoOpenIssues: number;
   totalRepoLast90DaysEvents: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface ScrapingResult {
