@@ -25,6 +25,8 @@ interface IScraper {
   run(): Promise<void>;
 }
 
+const PER_PAGE = 100;
+
 export default class Scraper implements IScraper {
   private octokit: Octokit;
   private baseQuery: string;
@@ -99,18 +101,9 @@ export default class Scraper implements IScraper {
         this.octokit.request('GET /search/users', {
           q: `${this.baseQuery} ${dateCreated}`,
           page: this.nextPageToScrape,
-          per_page: 100,
+          per_page: PER_PAGE,
         })
       );
-
-      if (!orgs.items.length) {
-        this.date = getPreviousWeek(this.date);
-        this.nextPageToScrape = 1;
-
-        this.saveToFile();
-
-        continue;
-      }
 
       await Promise.all(
         orgs.items.map(async (organization) => {
@@ -232,7 +225,13 @@ export default class Scraper implements IScraper {
         })
       );
 
-      this.nextPageToScrape++;
+      if (
+        PER_PAGE * (this.nextPageToScrape - 1) + orgs.items.length >=
+        orgs.total_count
+      ) {
+        this.date = getPreviousWeek(this.date);
+        this.nextPageToScrape = 1;
+      } else this.nextPageToScrape++;
 
       this.saveToFile();
     }
