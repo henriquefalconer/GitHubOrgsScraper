@@ -117,20 +117,18 @@ export default class Scraper implements IScraper {
           if (this.organizations.some((o) => o.login === organization.login))
             return;
 
-          const rawRepos = await requestWrapper(() =>
-            this.octokit.request('GET /users/{username}/repos', {
-              username: organization.login,
-            })
-          );
-
-          if (!rawRepos.length) return;
-
           const data = await requestWrapper(() =>
             this.octokit.request('GET /users/{username}', {
               username: organization.login,
             })
           );
           const publicUser = data as PublicUser;
+
+          const rawRepos = await requestWrapper(() =>
+            this.octokit.request('GET /users/{username}/repos', {
+              username: organization.login,
+            })
+          );
 
           const repos: RepoWithEvents[] = [];
 
