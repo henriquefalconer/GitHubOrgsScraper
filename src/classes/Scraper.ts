@@ -225,10 +225,10 @@ export default class Scraper implements IScraper {
         })
       );
 
-      if (
-        PER_PAGE * (this.nextPageToScrape - 1) + orgs.items.length >=
-        orgs.total_count
-      ) {
+      const orgsScrapedOnPeriod =
+        PER_PAGE * (this.nextPageToScrape - 1) + orgs.items.length;
+
+      if (orgsScrapedOnPeriod >= orgs.total_count) {
         this.date = getPreviousWeek(this.date);
         this.nextPageToScrape = 1;
       } else this.nextPageToScrape++;
