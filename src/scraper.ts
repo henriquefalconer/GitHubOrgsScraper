@@ -15,20 +15,24 @@ import { readJSONFile, saveJSONFile } from 'utils/json';
 import requestWrapper from 'utils/requestWrapper';
 
 interface ScraperConfig {
-  octokit: Octokit;
+  personalAccessTokens: string[];
   baseQuery: string;
   resultLocation: string;
 }
 
 interface IScraper {
-  setup({ octokit, baseQuery, resultLocation }: ScraperConfig): void;
+  setup({
+    personalAccessTokens,
+    baseQuery,
+    resultLocation,
+  }: ScraperConfig): void;
   run(): Promise<void>;
 }
 
 const PER_PAGE = 100;
 
 export default class Scraper implements IScraper {
-  private octokit: Octokit;
+  private octokits: Octokit[];
   private baseQuery: string;
   private resultLocation: string;
   private nextPageToScrape: number;
@@ -64,16 +68,16 @@ export default class Scraper implements IScraper {
     const {
       items: [oldestOrg],
       total_count,
-    } = await requestWrapper(() =>
-      this.octokit.request('GET /search/users', {
+    } = await requestWrapper(this.octokits, (octokit) =>
+      octokit.request('GET /search/users', {
         q: this.baseQuery,
         sort: 'joined',
         order: 'asc',
       })
     );
 
-    const oldestData = await requestWrapper(() =>
-      this.octokit.request('GET /users/{username}', {
+    const oldestData = await requestWrapper(this.octokits, (octokit) =>
+      octokit.request('GET /users/{username}', {
         username: oldestOrg.login,
       })
     );
@@ -83,8 +87,12 @@ export default class Scraper implements IScraper {
     this.oldestOrgDate = publicUser.created_at;
   }
 
-  public setup({ octokit, baseQuery, resultLocation }: ScraperConfig) {
-    this.octokit = octokit;
+  public setup({
+    personalAccessTokens,
+    baseQuery,
+    resultLocation,
+  }: ScraperConfig) {
+    this.octokits = personalAccessTokens.map((t) => new Octokit({ auth: t }));
     this.baseQuery = baseQuery;
     this.resultLocation = resultLocation;
 
@@ -97,8 +105,8 @@ export default class Scraper implements IScraper {
     while (moment(this.date, 'YYYY-MM-DD').isAfter(this.oldestOrgDate)) {
       const dateCreated = `created:${getPreviousWeek(this.date)}..${this.date}`;
 
-      const orgs = await requestWrapper(() =>
-        this.octokit.request('GET /search/users', {
+      const orgs = await requestWrapper(this.octokits, (octokit) =>
+        octokit.request('GET /search/users', {
           q: `${this.baseQuery} ${dateCreated}`,
           page: this.nextPageToScrape,
           per_page: PER_PAGE,
@@ -110,15 +118,15 @@ export default class Scraper implements IScraper {
           if (this.organizations.some((o) => o.login === organization.login))
             return;
 
-          const data = await requestWrapper(() =>
-            this.octokit.request('GET /users/{username}', {
+          const data = await requestWrapper(this.octokits, (octokit) =>
+            octokit.request('GET /users/{username}', {
               username: organization.login,
             })
           );
           const publicUser = data as PublicUser;
 
-          const rawRepos = await requestWrapper(() =>
-            this.octokit.request('GET /users/{username}/repos', {
+          const rawRepos = await requestWrapper(this.octokits, (octokit) =>
+            octokit.request('GET /users/{username}/repos', {
               username: organization.login,
             })
           );
@@ -130,8 +138,8 @@ export default class Scraper implements IScraper {
               let last_90_days_events_count: number;
 
               try {
-                const events = await requestWrapper(() =>
-                  this.octokit.request('GET /repos/{owner}/{repo}/events', {
+                const events = await requestWrapper(this.octokits, (octokit) =>
+                  octokit.request('GET /repos/{owner}/{repo}/events', {
                     owner: organization.login,
                     repo: repo.name,
                   })
