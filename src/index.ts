@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 
-import Scraper from 'Scraper';
+import Scraper from 'classes/Scraper';
 
 dotenv.config();
 
