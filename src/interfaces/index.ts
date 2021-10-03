@@ -19,7 +19,6 @@ export interface Organization {
   createdAt: string;
   publicRepos: number;
   totalRepoStars: number;
-  totalRepoWatchers: number;
   totalRepoForks: number;
   totalRepoOpenIssues: number;
   totalRepoLast90DaysEvents: number;
