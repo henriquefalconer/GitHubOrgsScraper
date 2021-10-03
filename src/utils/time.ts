@@ -14,7 +14,7 @@ export const waitUntil = (time: moment.Moment) =>
   });
 
 export const raceWaitUntil = (time: moment.Moment) =>
-  Promise.race([wait(time.diff(moment())), waitUntil(time)]);
+  Promise.race([wait(time.diff(moment())), waitUntil(time.add(1, 'second'))]);
 
 export const getPreviousWeek = (date: string) =>
   moment(date, 'YYYY-MM-DD').subtract(1, 'week').format('YYYY-MM-DD');
