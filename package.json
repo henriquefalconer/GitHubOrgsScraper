@@ -1,5 +1,5 @@
 {
-  "name": "github-scraper",
+  "name": "github-orgs-scraper",
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {

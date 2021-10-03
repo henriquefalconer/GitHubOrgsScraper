@@ -1,6 +1,6 @@
-# GitHubScraper
+# GitHubOrgsScraper
 
-Ferramenta de web scraping de empresas no GitHub, feita em Typescript
+Ferramenta de web scraping de organizações no GitHub, feita em Typescript
 
 ### Como pesquisar com a API do GitHub:
 
