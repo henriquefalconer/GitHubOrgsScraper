@@ -13,6 +13,9 @@ export const waitUntil = (time: moment.Moment) =>
     }, 1000);
   });
 
+// Quando o sistema desliga, o setTimeout parece congelar, calculando errado o tempo
+// de volta da operação. Para evitar que isso aconteça, pode-se utilizar o setInterval
+// em paralelo, como um sistema alternativo de verificação da passagem do tempo.
 export const raceWaitUntil = (time: moment.Moment) =>
   Promise.race([wait(time.diff(moment())), waitUntil(time.add(1, 'second'))]);
 
