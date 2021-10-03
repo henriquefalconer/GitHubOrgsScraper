@@ -5,7 +5,7 @@ import moment from 'moment';
 import OctokitError from 'errors/OctokitError';
 import RepoBlocked from 'errors/RepoBlocked';
 
-import { getFormattedTime, wait } from '../utils/time';
+import { getFormattedTime, raceWaitUntil } from '../utils/time';
 
 interface IRequestController {
   makeRequest<D>(
@@ -56,7 +56,7 @@ export default class RequestController implements IRequestController {
     try {
       const { data } = await this.makeCatchableRequest(request);
 
-      if (this.error) await wait(this.resetMoment.diff(moment()));
+      if (this.error) await raceWaitUntil(this.resetMoment);
 
       return data;
     } catch (err: any) {
@@ -91,7 +91,7 @@ export default class RequestController implements IRequestController {
           );
         }
 
-        await wait(this.resetMoment.diff(moment()));
+        await raceWaitUntil(this.resetMoment);
 
         if (this.error)
           console.log(`\n[${getFormattedTime()}] Operação retomada.`);
